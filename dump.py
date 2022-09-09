@@ -79,7 +79,7 @@ def graphql(version: int, hash: str, referer_path: str, variables: dict = {}):
         r.raise_for_status()
     return r.json()
 
-HISTORY_DETAIL_REGEX = re.compile(r"VsHistoryDetail-u-[a-z0-9]+:RECENT:(20[0-9]{6}T[0-9]{6}_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
+HISTORY_DETAIL_REGEX = re.compile(r"(?:Coop|Vs)HistoryDetail-u-[a-z0-9]+(?::RECENT)?:(20[0-9]{6}T[0-9]{6}_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
 current_token = get_token()
 
 print("fetching latest battles...")
@@ -95,6 +95,24 @@ for history_group in latest_battles_res["data"]["latestBattleHistories"]["histor
             j = graphql(1, "cd82f2ade8aca7687947c5f3210805a6", "/history/latest", {
                 "vsResultId": history_detail["id"]
             })
+            with open(json_path, "w") as f:
+                json.dump(j, f, ensure_ascii=False, indent=4)
+print("done!")
+
+print("fetching latest attendance...")
+latest_attendance_res = graphql(1, "a5692cf290ffb26f14f0f7b6e5023b07", "/coop")
+for history_group in latest_attendance_res["data"]["coopResult"]["historyGroups"]["nodes"]:
+    history_group_data = history_group.copy()
+    del history_group_data["historyDetails"]
+    for history_detail in history_group["historyDetails"]["nodes"]:
+        file_id = HISTORY_DETAIL_REGEX.match(base64.b64decode(history_detail["id"]).decode("ascii")).group(1)
+        json_path = f"data/salmon/{file_id}.json"
+        if not os.path.exists(json_path):
+            print("dumping", json_path)
+            j = graphql(1, "f3799a033f0a7ad4b1b396f9a3bafb1e", "/coop", {
+                "coopHistoryDetailId": history_detail["id"]
+            })
+            j["x-history-group"] = history_group_data
             with open(json_path, "w") as f:
                 json.dump(j, f, ensure_ascii=False, indent=4)
 print("done!")

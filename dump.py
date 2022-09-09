@@ -6,12 +6,18 @@ import json
 import base64
 from getpass import getpass
 
+current_token = None
+
 def get_token():
+    global current_token
+    if current_token is not None:
+        return current_token
     TOKENS_JSON_NAME = "tokens.json"
     if os.path.exists(TOKENS_JSON_NAME):
         try:
             with open(TOKENS_JSON_NAME, "r") as f:
-                return json.load(f)
+                current_token = json.load(f)
+                return current_token
         except Exception as e:
             print("Failed to load tokens.json...", e)
     while True:
@@ -26,15 +32,16 @@ def get_token():
         except Exception as e:
             print(e)
             print("It seems Invalid Token... Retry!")
-    token = t
+    current_token = t
     while True:
         yn = input("Do you want to save token to tokens.json? (y/n):").strip().lower()
         if yn == "y":
             with open(TOKENS_JSON_NAME, "w") as f:
-                json.dump(token, f)
-            return token
+                json.dump(current_token, f)
+            break
         elif yn == "n":
-            return token
+            break
+    return current_token
 
 # referer may not be needed
 def graphql(version: int, hash: str, referer_path: str, variables: dict = {}):
@@ -66,10 +73,11 @@ def graphql(version: int, hash: str, referer_path: str, variables: dict = {}):
 HISTORY_DETAIL_REGEX = re.compile(r"VsHistoryDetail-u-[a-z0-9]+:RECENT:(20[0-9]{6}T[0-9]{6}_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
 current_token = get_token()
 
+print("fetching latest battles...")
 latest_battles_res = graphql(1, "80585ad4e4ecb674c3d8cd278adb1d21", "/history/latest")
+print("fetched!")
 for history_group in latest_battles_res["data"]["latestBattleHistories"]["historyGroups"]["nodes"]:
     for history_detail in history_group["historyDetails"]["nodes"]:
-        print("---")
         # print(history_detail)
         file_id = HISTORY_DETAIL_REGEX.match(base64.b64decode(history_detail["id"]).decode("ascii")).group(1)
         json_path = f"data/{file_id}.json"
@@ -80,3 +88,4 @@ for history_group in latest_battles_res["data"]["latestBattleHistories"]["histor
             })
             with open(json_path, "w") as f:
                 json.dump(j, f, ensure_ascii=False, indent=4)
+print("done!")

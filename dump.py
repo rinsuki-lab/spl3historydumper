@@ -8,18 +8,19 @@ from getpass import getpass
 
 current_token = None
 
-def get_token():
-    global current_token
-    if current_token is not None:
-        return current_token
+def get_token(force_renew = False):
     TOKENS_JSON_NAME = "tokens.json"
-    if os.path.exists(TOKENS_JSON_NAME):
-        try:
-            with open(TOKENS_JSON_NAME, "r") as f:
-                current_token = json.load(f)
-                return current_token
-        except Exception as e:
-            print("Failed to load tokens.json...", e)
+    global current_token
+    if not force_renew:
+        if current_token is not None:
+            return current_token
+        if os.path.exists(TOKENS_JSON_NAME):
+            try:
+                with open(TOKENS_JSON_NAME, "r") as f:
+                    current_token = json.load(f)
+                    return current_token
+            except Exception as e:
+                print("Failed to load tokens.json...", e)
     while True:
         t = getpass("Input Token (from /api/graphql's Authorization header, token will not echo): ").strip()
         try:
@@ -52,7 +53,7 @@ def graphql(version: int, hash: str, referer_path: str, variables: dict = {}):
     r = requests.post("https://api.lp1.av5ja.srv.nintendo.net/api/graphql", json={
         "extensions": {
             "persistedQuery": {
-                "version": 1,
+                "version": version,
                 "sha256Hash": hash,
             }
         },
@@ -65,8 +66,16 @@ def graphql(version: int, hash: str, referer_path: str, variables: dict = {}):
         "Authorization": "Bearer " + get_token(),
     })
     if not r.ok:
-        print("--- FAIL REQUEST ---")
+        print(f"--- FAIL REQUEST (HTTP {r.status_code}) ---")
         print(r.text)
+        if r.status_code == 401:
+            while True:
+                yn = input("potentially token expired. do you want to re-set token? (y/n):").strip().lower()
+                if yn == "y":
+                    get_token(force_renew=True)
+                    return graphql(version, hash, referer_path, variables)
+                elif yn == "n":
+                    break
         r.raise_for_status()
     return r.json()
 

@@ -21,7 +21,7 @@ def get_token():
         except Exception as e:
             print("Failed to load tokens.json...", e)
     while True:
-        t = getpass("Input Token (from Authorization header, token will not echo): ").strip()
+        t = getpass("Input Token (from /api/graphql's Authorization header, token will not echo): ").strip()
         try:
             if t.startswith("Bearer "):
                 t = t[len("Bearer "):]

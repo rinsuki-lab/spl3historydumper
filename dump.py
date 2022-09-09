@@ -25,7 +25,7 @@ def get_token():
         try:
             if t.startswith("Bearer "):
                 t = t[len("Bearer "):]
-            token = base64.b64decode(t)
+            token = base64.urlsafe_b64decode(t)
             if len(token) > 8:
                 break
             print("Token too short...")

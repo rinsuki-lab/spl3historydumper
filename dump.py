@@ -4,6 +4,7 @@ import requests
 import re
 import json
 import base64
+from glob import iglob
 from getpass import getpass
 
 current_token = None
@@ -79,7 +80,51 @@ def graphql(version: int, hash: str, referer_path: str, variables: dict = {}):
         r.raise_for_status()
     return r.json()
 
-HISTORY_DETAIL_REGEX = re.compile(r"(?:Coop|Vs)HistoryDetail-u-[a-z0-9]+(?::RECENT)?:(20[0-9]{6}T[0-9]{6}_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
+def deid(id: str):
+    try:
+        return HISTORY_DETAIL_REGEX.match(base64.b64decode(id).decode("ascii")).group(1)
+    except:
+        # print(id)
+        raise
+
+def save_vs_detail(hid: str):
+    file_id = deid(history_detail["id"])
+    json_path = f"data/{file_id}.json"
+    if not os.path.exists(json_path):
+        print("dumping", json_path)
+        j = graphql(1, VS_DETAIL_QUERY_ID, "/history/latest", {
+            "vsResultId": history_detail["id"]
+        })
+        j["x-vs-detail-query-id"] = VS_DETAIL_QUERY_ID
+        with open(json_path, "w") as f:
+            json.dump(j, f, ensure_ascii=False, indent=4)
+
+def save_group(t: str, sg: dict):
+    for history_group in sg["historyGroups"]["nodes"]:
+        for hd in history_group["historyDetails"]["nodes"]:
+            save_vs_detail(hd["id"])
+        history_group["x-battle-ids"] = list(map(lambda x:deid(x["id"]), history_group["historyDetails"]["nodes"]))
+        for saved_group in iglob(f"data/groups/{t}.*.json"):
+            with open(saved_group, "r") as sgf:
+                saved_group = json.load(sgf)
+            this_group = False
+            for battle_id in saved_group["x-battle-ids"]:
+                if this_group:
+                    if battle_id not in history_group["x-battle-ids"]:
+                        print(saved_group["x-battle-ids"][-1], "not_in", battle_id)
+                        history_group["x-battle-ids"].append(battle_id)
+                elif battle_id in history_group["x-battle-ids"]:
+                    this_group = True
+            if this_group:
+                break
+        first_id = history_group["x-battle-ids"][-1]
+        hg = history_group.copy()
+        del hg["historyDetails"]
+        with open(f"data/groups/{t}.{first_id}.json", "w") as f:
+            json.dump(hg, f, ensure_ascii=False, indent=4)
+
+HISTORY_DETAIL_REGEX = re.compile(r"(?:Coop|Vs)HistoryDetail-u-[a-z0-9]+(?::(?:RECENT|BANKARA|REGULAR|PRIVATE))?:(20[0-9]{6}T[0-9]{6}_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
+VS_DETAIL_QUERY_ID = "2b085984f729cd51938fc069ceef784a"
 current_token = get_token()
 
 print("fetching latest battles...")
@@ -88,16 +133,19 @@ print("fetched!")
 for history_group in latest_battles_res["data"]["latestBattleHistories"]["historyGroups"]["nodes"]:
     for history_detail in history_group["historyDetails"]["nodes"]:
         # print(history_detail)
-        file_id = HISTORY_DETAIL_REGEX.match(base64.b64decode(history_detail["id"]).decode("ascii")).group(1)
-        json_path = f"data/{file_id}.json"
-        if not os.path.exists(json_path):
-            print("dumping", json_path)
-            j = graphql(1, "cd82f2ade8aca7687947c5f3210805a6", "/history/latest", {
-                "vsResultId": history_detail["id"]
-            })
-            with open(json_path, "w") as f:
-                json.dump(j, f, ensure_ascii=False, indent=4)
-print("done!")
+        save_vs_detail(history_detail["id"])
+
+print("fetching regular match groups...")
+regular_res = graphql(1, "fed6e752513a9986177e8eec50dfdd3c", "/history/regular")
+save_group("regular", regular_res["data"]["regularBattleHistories"])
+
+print("fetching bankara match groups...")
+bankara_res = graphql(1, "d8a8662345593bbbcd63841c91d4c6f5", "/history/bankara")
+save_group("bankara", bankara_res["data"]["bankaraBattleHistories"])
+
+print("fetching private match groups...")
+private_res = graphql(1, "9ef974f2686a88f24e0dbff6f63a83c4", "/history/private")
+save_group("private", private_res["data"]["privateBattleHistories"])
 
 print("fetching latest attendance...")
 latest_attendance_res = graphql(1, "a5692cf290ffb26f14f0f7b6e5023b07", "/coop")

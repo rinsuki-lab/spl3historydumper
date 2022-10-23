@@ -7,10 +7,11 @@ from glob import iglob
 from getpass import getpass
 
 current_token = None
+should_skip_force_renew = False
 
 def get_token(force_renew = False):
     TOKENS_JSON_NAME = "tokens.json"
-    global current_token
+    global current_token, should_skip_force_renew
     if not force_renew:
         if current_token is not None:
             return current_token
@@ -18,9 +19,20 @@ def get_token(force_renew = False):
             try:
                 with open(TOKENS_JSON_NAME, "r") as f:
                     current_token = json.load(f)
+                    if type(current_token) is dict:
+                        if "http" in current_token:
+                            should_skip_force_renew = True
+                            current_token = requests.get(current_token["http"]["url"], headers=current_token["http"]["headers"])
+                            current_token.raise_for_status()
+                            current_token = current_token.json()["token"]
+                            if current_token.startswith("Bearer "):
+                                current_token = current_token[len("Bearer "):]
                     return current_token
             except Exception as e:
                 print("Failed to load tokens.json...", e)
+    if should_skip_force_renew:
+        print("seems your token API endpoint returns expired token, so please update your endpoint!")
+        exit(1)
     while True:
         t = getpass("Input Token (from /api/graphql's Authorization header, token will not echo): ").strip()
         try:

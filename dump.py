@@ -104,7 +104,7 @@ def save_vs_detail(hid: str):
     if not os.path.exists(json_path):
         print("dumping", json_path)
         j = graphql(1, VS_DETAIL_QUERY_ID, "/history/latest", {
-            "vsResultId": history_detail["id"]
+            "vsResultId": hid["id"]
         })
         j["x-vs-detail-query-id"] = VS_DETAIL_QUERY_ID
         with open(json_path, "w") as f:
@@ -138,40 +138,44 @@ HISTORY_DETAIL_REGEX = re.compile(r"(?:Coop|Vs)HistoryDetail-u-[a-z0-9]+(?::(?:R
 VS_DETAIL_QUERY_ID = "2b085984f729cd51938fc069ceef784a"
 current_token = get_token()
 
-print("fetching latest battles...")
-latest_battles_res = graphql(1, "80585ad4e4ecb674c3d8cd278adb1d21", "/history/latest")
-print("fetched!")
-for history_group in latest_battles_res["data"]["latestBattleHistories"]["historyGroups"]["nodes"]:
-    for history_detail in history_group["historyDetails"]["nodes"]:
-        # print(history_detail)
-        save_vs_detail(history_detail["id"])
+def main():
+    print("fetching latest battles...")
+    latest_battles_res = graphql(1, "80585ad4e4ecb674c3d8cd278adb1d21", "/history/latest")
+    print("fetched!")
+    for history_group in latest_battles_res["data"]["latestBattleHistories"]["historyGroups"]["nodes"]:
+        for history_detail in history_group["historyDetails"]["nodes"]:
+            # print(history_detail)
+            save_vs_detail(history_detail["id"])
 
-print("fetching regular match groups...")
-regular_res = graphql(1, "fed6e752513a9986177e8eec50dfdd3c", "/history/regular")
-save_group("regular", regular_res["data"]["regularBattleHistories"])
+    print("fetching regular match groups...")
+    regular_res = graphql(1, "fed6e752513a9986177e8eec50dfdd3c", "/history/regular")
+    save_group("regular", regular_res["data"]["regularBattleHistories"])
 
-print("fetching bankara match groups...")
-bankara_res = graphql(1, "d8a8662345593bbbcd63841c91d4c6f5", "/history/bankara")
-save_group("bankara", bankara_res["data"]["bankaraBattleHistories"])
+    print("fetching bankara match groups...")
+    bankara_res = graphql(1, "d8a8662345593bbbcd63841c91d4c6f5", "/history/bankara")
+    save_group("bankara", bankara_res["data"]["bankaraBattleHistories"])
 
-print("fetching private match groups...")
-private_res = graphql(1, "9ef974f2686a88f24e0dbff6f63a83c4", "/history/private")
-save_group("private", private_res["data"]["privateBattleHistories"])
+    print("fetching private match groups...")
+    private_res = graphql(1, "9ef974f2686a88f24e0dbff6f63a83c4", "/history/private")
+    save_group("private", private_res["data"]["privateBattleHistories"])
 
-print("fetching latest attendance...")
-latest_attendance_res = graphql(1, "a5692cf290ffb26f14f0f7b6e5023b07", "/coop")
-for history_group in latest_attendance_res["data"]["coopResult"]["historyGroups"]["nodes"]:
-    history_group_data = history_group.copy()
-    del history_group_data["historyDetails"]
-    for history_detail in history_group["historyDetails"]["nodes"]:
-        file_id = HISTORY_DETAIL_REGEX.match(base64.b64decode(history_detail["id"]).decode("ascii")).group(1)
-        json_path = f"data/salmon/{file_id}.json"
-        if not os.path.exists(json_path):
-            print("dumping", json_path)
-            j = graphql(1, "f3799a033f0a7ad4b1b396f9a3bafb1e", "/coop", {
-                "coopHistoryDetailId": history_detail["id"]
-            })
-            j["x-history-group"] = history_group_data
-            with open(json_path, "w") as f:
-                json.dump(j, f, ensure_ascii=False, indent=4)
-print("done!")
+    print("fetching latest attendance...")
+    latest_attendance_res = graphql(1, "a5692cf290ffb26f14f0f7b6e5023b07", "/coop")
+    for history_group in latest_attendance_res["data"]["coopResult"]["historyGroups"]["nodes"]:
+        history_group_data = history_group.copy()
+        del history_group_data["historyDetails"]
+        for history_detail in history_group["historyDetails"]["nodes"]:
+            file_id = HISTORY_DETAIL_REGEX.match(base64.b64decode(history_detail["id"]).decode("ascii")).group(1)
+            json_path = f"data/salmon/{file_id}.json"
+            if not os.path.exists(json_path):
+                print("dumping", json_path)
+                j = graphql(1, "f3799a033f0a7ad4b1b396f9a3bafb1e", "/coop", {
+                    "coopHistoryDetailId": history_detail["id"]
+                })
+                j["x-history-group"] = history_group_data
+                with open(json_path, "w") as f:
+                    json.dump(j, f, ensure_ascii=False, indent=4)
+    print("done!")
+
+if __name__ == "__main__":
+    main()

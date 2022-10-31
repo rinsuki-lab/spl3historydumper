@@ -1,2 +1,3 @@
 tokens.json
 data/*.*
+__pycache__

@@ -104,7 +104,7 @@ def save_vs_detail(hid: str):
     if not os.path.exists(json_path):
         print("dumping", json_path)
         j = graphql(1, VS_DETAIL_QUERY_ID, "/history/latest", {
-            "vsResultId": hid["id"]
+            "vsResultId": hid
         })
         j["x-vs-detail-query-id"] = VS_DETAIL_QUERY_ID
         with open(json_path, "w") as f:

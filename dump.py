@@ -99,7 +99,7 @@ def deid(id: str):
         raise
 
 def save_vs_detail(hid: str):
-    file_id = deid(history_detail["id"])
+    file_id = deid(hid)
     json_path = f"data/{file_id}.json"
     if not os.path.exists(json_path):
         print("dumping", json_path)

@@ -148,7 +148,7 @@ def main():
             save_vs_detail(history_detail["id"])
 
     print("fetching regular match groups...")
-    regular_res = graphql(1, "fed6e752513a9986177e8eec50dfdd3c", "/history/regular")
+    regular_res = graphql(1, "333d0a48071b0036449e35ece577b06f", "/history/regular")
     save_group("regular", regular_res["data"]["regularBattleHistories"])
 
     print("fetching bankara match groups...")
@@ -156,7 +156,7 @@ def main():
     save_group("bankara", bankara_res["data"]["bankaraBattleHistories"])
 
     print("fetching private match groups...")
-    private_res = graphql(1, "9ef974f2686a88f24e0dbff6f63a83c4", "/history/private")
+    private_res = graphql(1, "b304e707648f0669a939943d46febce1", "/history/private")
     save_group("private", private_res["data"]["privateBattleHistories"])
 
     print("fetching latest attendance...")

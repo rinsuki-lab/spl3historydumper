@@ -72,7 +72,7 @@ def graphql(version: int, hash: str, referer_path: str, variables: dict = {}):
         "variables": variables,
     }, headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)",
-        "x-web-view-ver": "1.0.0-5e2bcdfb",
+        "x-web-view-ver": "2.0.0-8a061f6c",
         "Origin": "https://api.lp1.av5ja.srv.nintendo.net",
         "Referer": "https://api.lp1.av5ja.srv.nintendo.net" + referer_path,
         "Authorization": "Bearer " + get_token(),
@@ -134,13 +134,13 @@ def save_group(t: str, sg: dict):
         with open(f"data/groups/{t}.{first_id}.json", "w") as f:
             json.dump(hg, f, ensure_ascii=False, indent=4)
 
-HISTORY_DETAIL_REGEX = re.compile(r"(?:Coop|Vs)HistoryDetail-u-[a-z0-9]+(?::(?:RECENT|BANKARA|REGULAR|PRIVATE))?:(20[0-9]{6}T[0-9]{6}_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
-VS_DETAIL_QUERY_ID = "2b085984f729cd51938fc069ceef784a"
+HISTORY_DETAIL_REGEX = re.compile(r"(?:Coop|Vs)HistoryDetail-u-[a-z0-9]+(?::(?:RECENT|BANKARA|REGULAR|PRIVATE|XMATCH))?:(20[0-9]{6}T[0-9]{6}_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
+VS_DETAIL_QUERY_ID = "291295ad311b99a6288fc95a5c4cb2d2"
 current_token = get_token()
 
 def main():
     print("fetching latest battles...")
-    latest_battles_res = graphql(1, "80585ad4e4ecb674c3d8cd278adb1d21", "/history/latest")
+    latest_battles_res = graphql(1, "4f5f26e64bca394b45345a65a2f383bd", "/history/latest")
     print("fetched!")
     for history_group in latest_battles_res["data"]["latestBattleHistories"]["historyGroups"]["nodes"]:
         for history_detail in history_group["historyDetails"]["nodes"]:
@@ -148,19 +148,23 @@ def main():
             save_vs_detail(history_detail["id"])
 
     print("fetching regular match groups...")
-    regular_res = graphql(1, "333d0a48071b0036449e35ece577b06f", "/history/regular")
+    regular_res = graphql(1, "d5b795d09e67ce153e622a184b7e7dfa", "/history/regular")
     save_group("regular", regular_res["data"]["regularBattleHistories"])
 
     print("fetching bankara match groups...")
-    bankara_res = graphql(1, "d8a8662345593bbbcd63841c91d4c6f5", "/history/bankara")
+    bankara_res = graphql(1, "de4754588109b77dbcb90fbe44b612ee", "/history/bankara")
     save_group("bankara", bankara_res["data"]["bankaraBattleHistories"])
 
+    print("fetching x match groups...")
+    bankara_res = graphql(1, "45c74fefb45a49073207229ca65f0a62", "/history/xmatch")
+    save_group("xmatch", bankara_res["data"]["xBattleHistories"])
+
     print("fetching private match groups...")
-    private_res = graphql(1, "b304e707648f0669a939943d46febce1", "/history/private")
+    private_res = graphql(1, "1d6ed57dc8b801863126ad4f351dfb9a", "/history/private")
     save_group("private", private_res["data"]["privateBattleHistories"])
 
     print("fetching latest attendance...")
-    latest_attendance_res = graphql(1, "a5692cf290ffb26f14f0f7b6e5023b07", "/coop")
+    latest_attendance_res = graphql(1, "6ed02537e4a65bbb5e7f4f23092f6154", "/coop")
     for history_group in latest_attendance_res["data"]["coopResult"]["historyGroups"]["nodes"]:
         history_group_data = history_group.copy()
         del history_group_data["historyDetails"]
@@ -169,7 +173,7 @@ def main():
             json_path = f"data/salmon/{file_id}.json"
             if not os.path.exists(json_path):
                 print("dumping", json_path)
-                j = graphql(1, "f3799a033f0a7ad4b1b396f9a3bafb1e", "/coop", {
+                j = graphql(1, "3cc5f826a6646b85f3ae45db51bd0707", "/coop", {
                     "coopHistoryDetailId": history_detail["id"]
                 })
                 j["x-history-group"] = history_group_data

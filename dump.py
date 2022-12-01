@@ -176,6 +176,7 @@ def main():
                 j = graphql(1, "3cc5f826a6646b85f3ae45db51bd0707", "/coop", {
                     "coopHistoryDetailId": history_detail["id"]
                 })
+                j["x-query-id"] = "3cc5f826a6646b85f3ae45db51bd0707"
                 j["x-history-group"] = history_group_data
                 with open(json_path, "w") as f:
                     json.dump(j, f, ensure_ascii=False, indent=4)

@@ -140,7 +140,7 @@ current_token = get_token()
 
 def main():
     print("fetching latest battles...")
-    latest_battles_res = graphql(1, "4f5f26e64bca394b45345a65a2f383bd", "/history/latest")
+    latest_battles_res = graphql(1, "047c1ff4d6b9f03b082aa6ffdb200a6a", "/history/latest")
     print("fetched!")
     for history_group in latest_battles_res["data"]["latestBattleHistories"]["historyGroups"]["nodes"]:
         for history_detail in history_group["historyDetails"]["nodes"]:
@@ -148,19 +148,19 @@ def main():
             save_vs_detail(history_detail["id"])
 
     print("fetching regular match groups...")
-    regular_res = graphql(1, "d5b795d09e67ce153e622a184b7e7dfa", "/history/regular")
+    regular_res = graphql(1, "04e5d83f4243541c369b2e7556b9b809", "/history/regular")
     save_group("regular", regular_res["data"]["regularBattleHistories"])
 
     print("fetching bankara match groups...")
-    bankara_res = graphql(1, "de4754588109b77dbcb90fbe44b612ee", "/history/bankara")
+    bankara_res = graphql(1, "964c03ed28eb640438d8113534de2fe4", "/history/bankara")
     save_group("bankara", bankara_res["data"]["bankaraBattleHistories"])
 
     print("fetching x match groups...")
-    bankara_res = graphql(1, "45c74fefb45a49073207229ca65f0a62", "/history/xmatch")
+    bankara_res = graphql(1, "ba35dcea6d5666463e86273e1756d9ed", "/history/xmatch")
     save_group("xmatch", bankara_res["data"]["xBattleHistories"])
 
     print("fetching private match groups...")
-    private_res = graphql(1, "1d6ed57dc8b801863126ad4f351dfb9a", "/history/private")
+    private_res = graphql(1, "4835a28419ad3c7bfacbb30ca4008140", "/history/private")
     save_group("private", private_res["data"]["privateBattleHistories"])
 
     print("fetching latest attendance...")

@@ -136,6 +136,7 @@ def save_group(t: str, sg: dict):
 
 HISTORY_DETAIL_REGEX = re.compile(r"(?:Coop|Vs)HistoryDetail-u-[a-z0-9]+(?::(?:RECENT|BANKARA|REGULAR|PRIVATE|XMATCH))?:(20[0-9]{6}T[0-9]{6}_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
 VS_DETAIL_QUERY_ID = "291295ad311b99a6288fc95a5c4cb2d2"
+SALMON_DETAIL_ID = "9ade2aa3656324870ccec023636aed32"
 current_token = get_token()
 
 def main():
@@ -164,7 +165,7 @@ def main():
     save_group("private", private_res["data"]["privateBattleHistories"])
 
     print("fetching latest attendance...")
-    latest_attendance_res = graphql(1, "6ed02537e4a65bbb5e7f4f23092f6154", "/coop")
+    latest_attendance_res = graphql(1, "2a7f4335bcf586d904db85e75ba868c0", "/coop")
     for history_group in latest_attendance_res["data"]["coopResult"]["historyGroups"]["nodes"]:
         history_group_data = history_group.copy()
         del history_group_data["historyDetails"]
@@ -173,10 +174,10 @@ def main():
             json_path = f"data/salmon/{file_id}.json"
             if not os.path.exists(json_path):
                 print("dumping", json_path)
-                j = graphql(1, "3cc5f826a6646b85f3ae45db51bd0707", "/coop", {
+                j = graphql(1, SALMON_DETAIL_ID, "/coop", {
                     "coopHistoryDetailId": history_detail["id"]
                 })
-                j["x-query-id"] = "3cc5f826a6646b85f3ae45db51bd0707"
+                j["x-query-id"] = SALMON_DETAIL_ID
                 j["x-history-group"] = history_group_data
                 with open(json_path, "w") as f:
                     json.dump(j, f, ensure_ascii=False, indent=4)

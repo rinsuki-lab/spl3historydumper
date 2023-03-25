@@ -8,6 +8,7 @@ from getpass import getpass
 
 current_token = None
 should_skip_force_renew = False
+WEBVIEW_VER = "3.0.0-0742bda0"
 
 def get_token(force_renew = False):
     TOKENS_JSON_NAME = "tokens.json"
@@ -23,6 +24,7 @@ def get_token(force_renew = False):
                         if "http" in current_token:
                             should_skip_force_renew = True
                             current_token = requests.get(current_token["http"]["url"], headers=current_token["http"]["headers"])
+                            print(current_token.text)
                             current_token.raise_for_status()
                             current_token = current_token.json()["token"]
                             if current_token.startswith("Bearer "):
@@ -72,7 +74,7 @@ def graphql(version: int, hash: str, referer_path: str, variables: dict = {}):
         "variables": variables,
     }, headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)",
-        "x-web-view-ver": "2.0.0-8a061f6c",
+        "x-web-view-ver": WEBVIEW_VER,
         "Origin": "https://api.lp1.av5ja.srv.nintendo.net",
         "Referer": "https://api.lp1.av5ja.srv.nintendo.net" + referer_path,
         "Authorization": "Bearer " + get_token(),
@@ -136,12 +138,12 @@ def save_group(t: str, sg: dict):
 
 HISTORY_DETAIL_REGEX = re.compile(r"(?:Coop|Vs)HistoryDetail-u-[a-z0-9]+(?::(?:RECENT|BANKARA|REGULAR|PRIVATE|XMATCH))?:(20[0-9]{6}T[0-9]{6}_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
 VS_DETAIL_QUERY_ID = "291295ad311b99a6288fc95a5c4cb2d2"
-SALMON_DETAIL_ID = "9ade2aa3656324870ccec023636aed32"
+SALMON_DETAIL_ID = "379f0d9b78b531be53044bcac031b34b"
 current_token = get_token()
 
 def main():
     print("fetching latest battles...")
-    latest_battles_res = graphql(1, "047c1ff4d6b9f03b082aa6ffdb200a6a", "/history/latest")
+    latest_battles_res = graphql(1, "0176a47218d830ee447e10af4a287b3f", "/history/latest")
     print("fetched!")
     for history_group in latest_battles_res["data"]["latestBattleHistories"]["historyGroups"]["nodes"]:
         for history_detail in history_group["historyDetails"]["nodes"]:
@@ -149,23 +151,23 @@ def main():
             save_vs_detail(history_detail["id"])
 
     print("fetching regular match groups...")
-    regular_res = graphql(1, "04e5d83f4243541c369b2e7556b9b809", "/history/regular")
+    regular_res = graphql(1, "3baef04b095ad8975ea679d722bc17de", "/history/regular")
     save_group("regular", regular_res["data"]["regularBattleHistories"])
 
     print("fetching bankara match groups...")
-    bankara_res = graphql(1, "964c03ed28eb640438d8113534de2fe4", "/history/bankara")
+    bankara_res = graphql(1, "0438ea6978ae8bd77c5d1250f4f84803", "/history/bankara")
     save_group("bankara", bankara_res["data"]["bankaraBattleHistories"])
 
     print("fetching x match groups...")
-    bankara_res = graphql(1, "ba35dcea6d5666463e86273e1756d9ed", "/history/xmatch")
-    save_group("xmatch", bankara_res["data"]["xBattleHistories"])
+    xmatch_res = graphql(1, "6796e3cd5dc3ebd51864dc709d899fc5", "/history/xmatch")
+    save_group("xmatch", xmatch_res["data"]["xBattleHistories"])
 
     print("fetching private match groups...")
-    private_res = graphql(1, "4835a28419ad3c7bfacbb30ca4008140", "/history/private")
+    private_res = graphql(1, "8e5ae78b194264a6c230e262d069bd28", "/history/private")
     save_group("private", private_res["data"]["privateBattleHistories"])
 
     print("fetching latest attendance...")
-    latest_attendance_res = graphql(1, "2a7f4335bcf586d904db85e75ba868c0", "/coop")
+    latest_attendance_res = graphql(1, "91b917becd2fa415890f5b47e15ffb15", "/coop")
     for history_group in latest_attendance_res["data"]["coopResult"]["historyGroups"]["nodes"]:
         history_group_data = history_group.copy()
         del history_group_data["historyDetails"]
